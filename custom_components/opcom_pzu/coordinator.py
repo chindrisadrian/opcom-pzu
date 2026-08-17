@@ -34,7 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 # prices for the next day usually appear between 13:00 and 14:00
 TOMORROW_FROM_HOUR = 12
 TOMORROW_RETRY = timedelta(minutes=10)
-USER_AGENT = "HomeAssistant-OPCOM-PZU (+https://github.com/chindrisadrian/opcom)"
+USER_AGENT = "HomeAssistant-OPCOM-PZU (+https://github.com/chindrisadrian/opcom-pzu)"
 
 
 @dataclass

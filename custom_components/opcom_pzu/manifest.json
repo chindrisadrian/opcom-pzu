@@ -9,10 +9,10 @@
     "http",
     "frontend"
   ],
-  "documentation": "https://github.com/chindrisadrian/opcom",
+  "documentation": "https://github.com/chindrisadrian/opcom-pzu",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/chindrisadrian/opcom/issues",
+  "issue_tracker": "https://github.com/chindrisadrian/opcom-pzu/issues",
   "requirements": [],
-  "version": "1.1.1"
+  "version": "1.1.2"
 }

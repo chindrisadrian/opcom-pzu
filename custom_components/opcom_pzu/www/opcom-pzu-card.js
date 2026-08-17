@@ -16,7 +16,7 @@
  *   height   graph height in pixels (default 200)
  */
 
-const VERSION = "1.1.1";
+const VERSION = "1.1.2";
 
 // sequential blue ramp: low price -> high price
 const RAMP = [
@@ -376,7 +376,7 @@ if (!window.customCards.some((c) => c.type === "opcom-pzu-card")) {
     name: "OPCOM PZU",
     preview: true,
     description: "15-minute DAM Prices, with optimal grid injection window.",
-    documentationURL: "https://github.com/chindrisadrian/opcom",
+    documentationURL: "https://github.com/chindrisadrian/opcom-pzu",
   });
 }
 
