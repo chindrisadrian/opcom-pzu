@@ -1,0 +1,18 @@
+{
+  "domain": "opcom_pzu",
+  "name": "OPCOM PZU",
+  "codeowners": [
+    "@chindrisadrian"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend"
+  ],
+  "documentation": "https://github.com/chindrisadrian/opcom",
+  "iot_class": "cloud_polling",
+  "integration_type": "service",
+  "issue_tracker": "https://github.com/chindrisadrian/opcom/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}
