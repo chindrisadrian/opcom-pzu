@@ -1,4 +1,4 @@
-"""Coordinator: aduce preturile OPCOM si recalculeaza valorile derivate."""
+"""Coordinator: fetches OPCOM prices and recalculates derived values."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# preturile pentru ziua urmatoare apar de regula intre 13:00 si 14:00
+# prices for the next day usually appear between 13:00 and 14:00
 TOMORROW_FROM_HOUR = 12
 TOMORROW_RETRY = timedelta(minutes=10)
 USER_AGENT = "HomeAssistant-OPCOM-PZU (+https://github.com/chindrisadrian/opcom)"
@@ -39,7 +39,7 @@ USER_AGENT = "HomeAssistant-OPCOM-PZU (+https://github.com/chindrisadrian/opcom)
 
 @dataclass
 class Settings:
-    """Reglajele ajustabile din UI, tinute in memorie si in optiunile intrarii."""
+    """Adjustable UI settings, kept in memory and entry options."""
 
     threshold: float = DEFAULT_THRESHOLD
     percentile: float = DEFAULT_PERCENTILE
@@ -63,14 +63,14 @@ class Settings:
 
 @dataclass
 class RuntimeData:
-    """Ce tine integrarea la runtime pentru o intrare de configurare."""
+    """What the integration keeps at runtime for a config entry."""
 
     coordinator: OpcomCoordinator
     settings: Settings = field(default_factory=Settings)
 
 
 class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Descarca CSV-ul o singura data pe zi si recalculeaza restul din memorie."""
+    """Downloads the CSV only once a day and recalculates the rest from memory."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(
@@ -85,9 +85,9 @@ class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_tomorrow_try: datetime | None = None
         self.last_error: str | None = None
 
-    # -- retea --------------------------------------------------------------
+    # -- network --------------------------------------------------------------
     async def _fetch_day(self, day: date) -> list[dict[str, Any]]:
-        """Descarca si parseaza o zi. Lista goala inseamna 'inca nepublicat'."""
+        """Downloads and parses a day. Empty list means 'not yet published'."""
         url = opcom.build_url(day)
         try:
             async with self._session.get(
@@ -98,7 +98,7 @@ class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 resp.raise_for_status()
                 text = await resp.text(errors="replace")
         except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("Nu am putut prelua %s: %s", url, err)
+            _LOGGER.debug("Could not fetch %s: %s", url, err)
             self.last_error = f"{type(err).__name__}: {err}"
             return []
 
@@ -106,17 +106,17 @@ class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             opcom.parse_csv, text, day, dt_util.DEFAULT_TIME_ZONE
         )
         if len(slots) < opcom.MIN_SLOTS:
-            _LOGGER.debug("%s a returnat doar %d intervale", url, len(slots))
+            _LOGGER.debug("%s returned only %d intervals", url, len(slots))
             return []
         self.last_error = None
         return slots
 
-    # -- ciclul de actualizare ---------------------------------------------
+    # -- update cycle ---------------------------------------------------------
     async def _async_update_data(self) -> dict[str, Any]:
         now = dt_util.now()
         today, tomorrow = now.date(), now.date() + timedelta(days=1)
 
-        # scapa de zilele trecute
+        # discard past days
         for old in [d for d in self._days if d < today]:
             self._days.pop(old, None)
 
@@ -125,7 +125,7 @@ class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if slots:
                 self._days[today] = slots
 
-        # ziua urmatoare: doar dupa-amiaza si cu pauza intre incercari
+        # next day: only in the afternoon and with pause between attempts
         if (
             len(self._days.get(tomorrow, [])) < opcom.MIN_SLOTS
             and now.hour >= TOMORROW_FROM_HOUR
@@ -141,20 +141,20 @@ class OpcomCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         if not self._days.get(today):
             raise UpdateFailed(
-                self.last_error or "OPCOM nu a returnat datele pentru ziua curenta"
+                self.last_error or "OPCOM did not return data for the current day"
             )
 
         return opcom.build_payload(
             self._days.get(today, []), self._days.get(tomorrow, []), now
         )
 
-    # -- ajutoare pentru entitati ------------------------------------------
+    # -- entity helpers -------------------------------------------------------
     @property
     def settings(self) -> Settings:
         return self.hass.data[DOMAIN][self.config_entry.entry_id].settings
 
     def window(self) -> dict[str, Any] | None:
-        """Fereastra optima pentru durata aleasa in UI."""
+        """Optimal window for the duration chosen in the UI."""
         if not self.data:
             return None
         return self.data.get(window_key(self.settings.window_hours))

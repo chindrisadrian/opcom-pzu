@@ -1,4 +1,4 @@
-"""Selectorul pentru durata ferestrei de injectie."""
+"""Selector for the injection window duration."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ async def async_setup_entry(
 
 
 class OpcomWindowSelect(OpcomEntity, SelectEntity):
-    """Cat dureaza descarcarea ta: 30 min, 1 h, 2 h, 3 h sau 4 h."""
+    """How long your discharge takes: 30 min, 1 h, 2 h, 3 h or 4 h."""
 
     _attr_icon = "mdi:timer-sand"
     _attr_options = WINDOW_OPTIONS

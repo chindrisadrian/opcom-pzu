@@ -1,6 +1,6 @@
-"""Teste offline pentru logica OPCOM, cu date reale din 18/08/2026.
+"""Offline tests for OPCOM logic, with real data from 18/08/2026.
 
-Ruleaza cu:  python3 tests/test_opcom.py
+Run with:  python3 tests/test_opcom.py
 """
 
 import json
@@ -50,118 +50,118 @@ def check(label, cond, extra=""):
         ok = False
 
 
-# ---- parsare --------------------------------------------------------------
+# ---- parsing --------------------------------------------------------------
 day = date(2026, 8, 18)
 slots = opcom.parse_csv(make_csv(PRICES), day, TZ)
 
-check("96 intervale parsate", len(slots) == 96, f"got {len(slots)}")
-check("blocul de sinteza ROPEX ignorat", all(1 <= s["interval"] <= 96 for s in slots))
-check("interval 1 = 00:00 la +03:00",
+check("96 intervals parsed", len(slots) == 96, f"got {len(slots)}")
+check("ROPEX summary block ignored", all(1 <= s["interval"] <= 96 for s in slots))
+check("interval 1 = 00:00 at +03:00",
       slots[0]["hour"] == "00:00" and slots[0]["start"].endswith("+03:00"), slots[0]["start"])
-check("interval 1 pret corect", slots[0]["value"] == 985.42)
+check("interval 1 correct price", slots[0]["value"] == 985.42)
 check("interval 96 = 23:45", slots[-1]["hour"] == "23:45")
-check("ultimul end = 00:00 ziua urmatoare", slots[-1]["end"][:16].endswith("19T00:00"),
+check("last end = 00:00 next day", slots[-1]["end"][:16].endswith("19T00:00"),
       slots[-1]["end"])
-check("intervale contigue de 15 min",
+check("contiguous 15 min intervals",
       all(slots[i]["ts"] + 900 == slots[i + 1]["ts"] for i in range(95)))
 
-# ---- statistici, verificate fata de indicii publicati de OPCOM ------------
+# ---- statistics, verified against published OPCOM indices -------------
 st = opcom.day_stats(slots)
-check("media = ROPEX_DAM_Base publicat (860.83)", abs(st["mean"] - 860.83) < 0.02,
+check("mean = published ROPEX_DAM_Base (860.83)", abs(st["mean"] - 860.83) < 0.02,
       f"got {st['mean']}")
-check("maxim 1154.43 la 19:45", st["max"] == 1154.43 and st["max_hour"] == "19:45")
-check("minim 601.99 la 09:45", st["min"] == 601.99 and st["min_hour"] == "09:45")
-check("Peak (33-80) = 807.04 publicat", abs(sum(PRICES[32:80]) / 48 - 807.04) < 0.02)
-check("Off-peak = 914.61 publicat",
+check("max 1154.43 at 19:45", st["max"] == 1154.43 and st["max_hour"] == "19:45")
+check("min 601.99 at 09:45", st["min"] == 601.99 and st["min_hour"] == "09:45")
+check("Peak (33-80) = published 807.04", abs(sum(PRICES[32:80]) / 48 - 807.04) < 0.02)
+check("Off-peak = published 914.61",
       abs((sum(PRICES[:32]) + sum(PRICES[80:])) / 48 - 914.61) < 0.02)
 
-# ---- ferestre -------------------------------------------------------------
+# ---- windows --------------------------------------------------------------
 w2 = opcom.best_window(slots, 2)
 brute = max(((i, sum(PRICES[i:i + 8]) / 8) for i in range(89)), key=lambda t: t[1])
-check("fereastra 2h = optimul prin forta bruta",
+check("2h window = brute force optimum",
       abs(w2["avg"] - brute[1]) < 0.01 and w2["from"] == slots[brute[0]]["hour"],
       f"{w2['label']} avg {w2['avg']}")
 w1 = opcom.best_window(slots, 1)
 b1 = max(((i, sum(PRICES[i:i + 4]) / 4) for i in range(93)), key=lambda t: t[1])
-check("fereastra 1h = optimul prin forta bruta", abs(w1["avg"] - b1[1]) < 0.01, w1["label"])
-check("fereastra mai lunga decat datele => None", opcom.best_window(slots[:4], 3) is None)
-check("toate duratele configurabile produc o fereastra",
+check("1h window = brute force optimum", abs(w1["avg"] - b1[1]) < 0.01, w1["label"])
+check("window longer than data => None", opcom.best_window(slots[:4], 3) is None)
+check("all configurable durations produce a window",
       all(opcom.best_window(slots, h) is not None for h, _ in opcom.WINDOW_SPECS))
 
 tops = opcom.top_slots(slots, 8)
-check("top 8 sortate cronologic", [t["start"] for t in tops] == sorted(t["start"] for t in tops))
-check("top 8 = cele mai scumpe 8",
+check("top 8 sorted chronologically", [t["start"] for t in tops] == sorted(t["start"] for t in tops))
+check("top 8 = top 8 most expensive",
       sorted((t["value"] for t in tops), reverse=True) == sorted(PRICES, reverse=True)[:8])
 
-# ---- schimbarea orei ------------------------------------------------------
+# ---- daylight saving time change ------------------------------------------
 oct_slots = opcom.parse_csv(make_csv([700.0] * 100), date(2026, 10, 25), TZ)
-check("25/10/2026 are 100 intervale", len(oct_slots) == 100)
-check("25/10 incepe +03:00 si se termina +02:00",
+check("25/10/2026 has 100 intervals", len(oct_slots) == 100)
+check("25/10 starts +03:00 and ends +02:00",
       oct_slots[0]["start"].endswith("+03:00") and oct_slots[-1]["end"].endswith("+02:00"))
-check("25/10 se incheie la 00:00 pe 26", oct_slots[-1]["end"][:16].endswith("26T00:00"))
+check("25/10 ends at 00:00 on the 26th", oct_slots[-1]["end"][:16].endswith("26T00:00"))
 
 mar_slots = opcom.parse_csv(make_csv([700.0] * 92), date(2026, 3, 29), TZ)
-check("29/03/2026 are 92 intervale", len(mar_slots) == 92)
-check("29/03 se incheie la 00:00 pe 30", mar_slots[-1]["end"][:16].endswith("30T00:00"))
+check("29/03/2026 has 92 intervals", len(mar_slots) == 92)
+check("29/03 ends at 00:00 on the 30th", mar_slots[-1]["end"][:16].endswith("30T00:00"))
 
-# ---- date proaste ---------------------------------------------------------
-check("CSV gol => lista goala", opcom.parse_csv("", day, TZ) == [])
-check("alta zona ignorata",
+# ---- bad data -------------------------------------------------------------
+check("empty CSV => empty list", opcom.parse_csv("", day, TZ) == [])
+check("other zone ignored",
       opcom.parse_csv(HEADER + '\n"Ungaria","1","10","1","1","1","PT15M"', day, TZ) == [])
-check("alta rezolutie ignorata", opcom.parse_csv(make_csv(PRICES[:24], tag="PT60M"), day, TZ) == [])
-check("format romanesc acceptat",
+check("other resolution ignored", opcom.parse_csv(make_csv(PRICES[:24], tag="PT60M"), day, TZ) == [])
+check("Romanian format accepted",
       opcom.parse_csv(HEADER + '\n"Romania","1","1.074,94","1153.1","1","1","PT15M"',
                       day, TZ)[0]["value"] == 1074.94)
-check("HTML in loc de CSV => lista goala",
-      opcom.parse_csv("<html><body>eroare</body></html>", day, TZ) == [])
+check("HTML instead of CSV => empty list",
+      opcom.parse_csv("<html><body>error</body></html>", day, TZ) == [])
 
-# ---- payload complet ------------------------------------------------------
+# ---- complete payload -----------------------------------------------------
 now = datetime(2026, 8, 18, 14, 7, tzinfo=TZ)
 tomorrow = opcom.parse_csv(make_csv(list(reversed(PRICES))), date(2026, 8, 19), TZ)
 p = opcom.build_payload(slots, tomorrow, now)
 
-check("state = pretul intervalului curent", p["state"] == PRICES[56], str(p["state"]))
-check("interval curent = 57", p["current_interval"] == 57 and p["current_hour"] == "14:00")
-check("azi si maine valide", p["today_valid"] and p["tomorrow_valid"])
-check("orizont = 40 azi + 96 maine", p["horizon_slots"] == 136, str(p["horizon_slots"]))
-check("rang corect", p["current_rank_today"] == sorted(PRICES, reverse=True).index(PRICES[56]) + 1)
-check("ferestrele incep in orizont", p["best_window_1h"]["start"] >= "2026-08-18T14:00")
-check("intervalele de maine sunt etichetate",
-      any("(maine)" in s["label"] for s in p["best_slots"]))
-check("intervalele de azi nu sunt etichetate gresit",
-      all("(maine)" not in s["label"] for s in p["best_slots"] if s["start"].startswith("2026-08-18")))
-check("toate cheile asteptate exista",
+check("state = current interval price", p["state"] == PRICES[56], str(p["state"]))
+check("current interval = 57", p["current_interval"] == 57 and p["current_hour"] == "14:00")
+check("today and tomorrow valid", p["today_valid"] and p["tomorrow_valid"])
+check("horizon = 40 today + 96 tomorrow", p["horizon_slots"] == 136, str(p["horizon_slots"]))
+check("correct rank", p["current_rank_today"] == sorted(PRICES, reverse=True).index(PRICES[56]) + 1)
+check("windows start in horizon", p["best_window_1h"]["start"] >= "2026-08-18T14:00")
+check("tomorrow intervals are labeled",
+      any("(tomorrow)" in s["label"] for s in p["best_slots"]))
+check("today intervals are not mislabeled",
+      all("(tomorrow)" not in s["label"] for s in p["best_slots"] if s["start"].startswith("2026-08-18")))
+check("all expected keys exist",
       all(k in p for k in ("raw_today", "raw_tomorrow", "today", "tomorrow", "best_slots",
                            "next_peak", "horizon_mean", "horizon_p75", "horizon_p90",
                            *(key for _, key in opcom.WINDOW_SPECS))))
-check("payload serializabil JSON", isinstance(json.dumps(p), str))
-check("payload sub 24 KB", len(json.dumps(p)) < 24000, f"{len(json.dumps(p))} bytes")
+check("payload JSON serializable", isinstance(json.dumps(p), str))
+check("payload under 24 KB", len(json.dumps(p)) < 24000, f"{len(json.dumps(p))} bytes")
 
-# fara datele de maine
+# without tomorrow's data
 p2 = opcom.build_payload(slots, [], now)
-check("fara maine: tomorrow_valid False", p2["tomorrow_valid"] is False)
-check("fara maine: orizont 40", p2["horizon_slots"] == 40)
-check("fara maine: fara etichete (maine)",
-      all("(maine)" not in s["label"] for s in p2["best_slots"]))
+check("without tomorrow: tomorrow_valid False", p2["tomorrow_valid"] is False)
+check("without tomorrow: horizon 40", p2["horizon_slots"] == 40)
+check("without tomorrow: no (tomorrow) labels",
+      all("(tomorrow)" not in s["label"] for s in p2["best_slots"]))
 
-# fara niciun fel de date
+# without any data
 p3 = opcom.build_payload([], [], now)
-check("fara date: state None", p3["state"] is None)
-check("fara date: fara exceptie si JSON valid", isinstance(json.dumps(p3), str))
-check("fara date: ferestrele sunt None",
+check("without data: state None", p3["state"] is None)
+check("without data: no exception and valid JSON", isinstance(json.dumps(p3), str))
+check("without data: windows are None",
       all(p3[key] is None for _, key in opcom.WINDOW_SPECS))
 
-# la miezul noptii, ultimul interval al zilei
+# at midnight, last interval of the day
 midnight = datetime(2026, 8, 18, 23, 50, tzinfo=TZ)
 p4 = opcom.build_payload(slots, tomorrow, midnight)
-check("23:50 => intervalul 96", p4["current_interval"] == 96, str(p4["current_interval"]))
-check("23:50 => orizontul contine ziua urmatoare", p4["horizon_slots"] == 97,
+check("23:50 => interval 96", p4["current_interval"] == 96, str(p4["current_interval"]))
+check("23:50 => horizon contains next day", p4["horizon_slots"] == 97,
       str(p4["horizon_slots"]))
 
 # ---- URL ------------------------------------------------------------------
-check("URL construit corect",
+check("correctly built URL",
       opcom.build_url(date(2026, 8, 5)).endswith("/05/08/2026/ro?resolution=15"),
       opcom.build_url(date(2026, 8, 5)))
 
-print("\n" + ("TOATE TESTELE AU TRECUT" if ok else "EXISTA TESTE PICATE"))
+print("\n" + ("ALL TESTS PASSED" if ok else "SOME TESTS FAILED"))
 sys.exit(0 if ok else 1)

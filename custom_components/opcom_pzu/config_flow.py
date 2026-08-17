@@ -1,4 +1,4 @@
-"""Config flow pentru OPCOM PZU."""
+"""Config flow for OPCOM PZU."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def _schema(defaults: dict[str, Any]) -> vol.Schema:
 
 
 def _normalise(data: dict[str, Any]) -> dict[str, Any]:
-    """Eticheta ferestrei -> ore, si numerele ca float."""
+    """Window label -> hours, and numbers as float."""
     raw = data.get(CONF_WINDOW, DEFAULT_WINDOW)
     hours = WINDOW_CHOICES[raw][0] if raw in WINDOW_CHOICES else float(raw)
     return {
@@ -86,7 +86,7 @@ def _normalise(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class OpcomConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Adaugarea integrarii din interfata."""
+    """Adding the integration from the UI."""
 
     VERSION = 1
 
@@ -110,7 +110,7 @@ class OpcomConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class OpcomOptionsFlow(OptionsFlow):
-    """Reglaje ulterioare, din Configureaza."""
+    """Subsequent settings, from Configure."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

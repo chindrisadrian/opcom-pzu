@@ -1,24 +1,24 @@
 /**
- * opcom-pzu-card — grafic al preturilor PZU la 15 minute.
+ * opcom-pzu-card — graph of DAM prices at 15 minutes.
  *
- * Face parte din integrarea OPCOM PZU si este inregistrat automat de aceasta,
- * deci nu trebuie adaugat manual ca resursa de frontend.
+ * Part of the OPCOM PZU integration and is registered automatically by it,
+ * so it doesn't need to be added manually as a frontend resource.
  *
- * Fara dependinte externe: tot graficul e SVG generat local.
+ * No external dependencies: the whole graph is SVG generated locally.
  *
- * Configurare minima:
+ * Minimal configuration:
  *   type: custom:opcom-pzu-card
  *
- * Optiuni:
- *   entity   senzorul de pret (implicit: se detecteaza singur)
- *   title    titlul cardului
- *   span     "48h" (implicit) sau "today"
- *   height   inaltimea graficului in pixeli (implicit 200)
+ * Options:
+ *   entity   the price sensor (default: autodetected)
+ *   title    card title
+ *   span     "48h" (default) or "today"
+ *   height   graph height in pixels (default 200)
  */
 
 const VERSION = "1.0.1";
 
-// rampa albastra secventiala: pret mic -> pret mare
+// sequential blue ramp: low price -> high price
 const RAMP = [
   [0.0, "#86b6ef"],
   [0.45, "#5598e7"],
@@ -30,14 +30,14 @@ const WINDOW_COLOR = "#0ca30c";
 const NBSP = " ";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const fmtPrice = (v) => (v == null ? "–" : Math.round(v).toLocaleString("ro-RO"));
+const fmtPrice = (v) => (v == null ? "–" : Math.round(v).toLocaleString("en-US"));
 const fmtHour = (d) =>
   `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
 const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const toHex = (n) => Math.round(clamp(n, 0, 255)).toString(16).padStart(2, "0");
 
-/** Interpoleaza rampa albastra: 0 = cel mai ieftin interval, 1 = cel mai scump. */
+/** Interpolates the blue ramp: 0 = cheapest interval, 1 = most expensive. */
 function rampColor(t) {
   const x = clamp(t, 0, 1);
   for (let i = 1; i < RAMP.length; i++) {
@@ -70,7 +70,7 @@ class OpcomPzuCard extends HTMLElement {
     this._width = 0;
   }
 
-  // -- ciclul de viata al cardului -----------------------------------------
+  // -- card lifecycle --------------------------------------------------------
   setConfig(config) {
     this._config = { span: "48h", height: 200, ...(config || {}) };
     this._built = false;
@@ -105,7 +105,7 @@ class OpcomPzuCard extends HTMLElement {
     this._render();
   }
 
-  // -- date ----------------------------------------------------------------
+  // -- data ------------------------------------------------------------------
   _findEntity() {
     if (this._config.entity) return this._config.entity;
     const states = this._hass?.states || {};
@@ -120,7 +120,7 @@ class OpcomPzuCard extends HTMLElement {
   _collect() {
     const id = this._findEntity();
     const st = id ? this._hass.states[id] : null;
-    if (!st) return { error: "Nu am gasit senzorul de pret OPCOM." };
+    if (!st) return { error: "Could not find the OPCOM price sensor." };
 
     const a = st.attributes || {};
     const today = a.raw_today || [];
@@ -130,7 +130,7 @@ class OpcomPzuCard extends HTMLElement {
       v: s.value,
       hour: s.hour,
     }));
-    if (!rows.length) return { error: "Nu am inca datele de la OPCOM." };
+    if (!rows.length) return { error: "OPCOM data not yet available." };
 
     return {
       entityId: id,
@@ -147,7 +147,7 @@ class OpcomPzuCard extends HTMLElement {
     };
   }
 
-  // -- randare -------------------------------------------------------------
+  // -- rendering -------------------------------------------------------------
   _build() {
     const style = document.createElement("style");
     style.textContent = `
@@ -199,21 +199,21 @@ class OpcomPzuCard extends HTMLElement {
     const { head, body, legend, tip } = this._els;
 
     if (d.error) {
-      head.innerHTML = `<h2>${esc(this._config.title || "Pret PZU la 15 minute")}</h2>`;
+      head.innerHTML = `<h2>${esc(this._config.title || "15-minute DAM Price")}</h2>`;
       body.innerHTML = `<div class="msg">${esc(d.error)}</div>`;
       legend.innerHTML = "";
       return;
     }
 
-    // ---- antet
+    // ---- header
     const win = d.window;
     head.innerHTML =
-      `<h2>${esc(this._config.title || "Pret PZU la 15 minute")}</h2>` +
-      `<span class="kv">acum <b>${fmtPrice(d.current)}</b> ${esc(d.unit)}</span>` +
-      (d.rank ? `<span class="kv">locul <b>${d.rank}</b> din ${d.slots}</span>` : "") +
-      (win ? `<span class="kv">fereastra <b>${esc(win.label)}</b></span>` : "");
+      `<h2>${esc(this._config.title || "15-minute DAM Price")}</h2>` +
+      `<span class="kv">now <b>${fmtPrice(d.current)}</b> ${esc(d.unit)}</span>` +
+      (d.rank ? `<span class="kv">rank <b>${d.rank}</b> of ${d.slots}</span>` : "") +
+      (win ? `<span class="kv">window <b>${esc(win.label)}</b></span>` : "");
 
-    // ---- geometrie
+    // ---- geometry
     const W = Math.max(this.clientWidth || 400, 260);
     const H = Number(this._config.height) || 200;
     const padL = 40, padR = 6, padT = 10, padB = 20;
@@ -223,7 +223,7 @@ class OpcomPzuCard extends HTMLElement {
     const rows = d.rows;
     const n = rows.length;
     const vMax = Math.max(...rows.map((r) => r.v), d.threshold ?? 0);
-    // barele pornesc de la zero — altfel diferentele par mai mari decat sunt
+    // bars start from zero — otherwise differences seem larger than they are
     const yTop = Math.ceil((vMax * 1.08) / 100) * 100;
     const y = (v) => padT + plotH - (v / yTop) * plotH;
     const bw = plotW / n;
@@ -236,7 +236,7 @@ class OpcomPzuCard extends HTMLElement {
     const vMin = Math.min(...rows.map((r) => r.v));
     const spread = Math.max(vMax - vMin, 1);
 
-    // ---- bare
+    // ---- bars
     let bars = "";
     rows.forEach((r, i) => {
       const x = padL + i * bw;
@@ -249,7 +249,7 @@ class OpcomPzuCard extends HTMLElement {
         `fill="${c}" data-i="${i}" rx="1"/>`;
     });
 
-    // ---- fereastra optima
+    // ---- optimal window
     let winShape = "";
     if (win) {
       const a = new Date(win.start).getTime();
@@ -267,7 +267,7 @@ class OpcomPzuCard extends HTMLElement {
       }
     }
 
-    // ---- prag
+    // ---- threshold
     let thrShape = "";
     if (d.threshold != null && d.threshold > 0 && d.threshold <= yTop) {
       const yt = y(d.threshold);
@@ -277,7 +277,7 @@ class OpcomPzuCard extends HTMLElement {
         `stroke-dasharray="5 4" opacity="0.85"/>`;
     }
 
-    // ---- linia "acum"
+    // ---- "now" line
     let nowShape = "";
     if (now >= t0 && now <= t0 + step * n) {
       const xn = xOf(now);
@@ -287,7 +287,7 @@ class OpcomPzuCard extends HTMLElement {
         `stroke-width="1.5" opacity="0.55"/>`;
     }
 
-    // ---- axe
+    // ---- axes
     let grid = "";
     const ticks = 4;
     for (let i = 0; i <= ticks; i++) {
@@ -321,25 +321,25 @@ class OpcomPzuCard extends HTMLElement {
     body.innerHTML =
       `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" ` +
       `preserveAspectRatio="xMidYMid meet" role="img" ` +
-      `aria-label="Preturi PZU la 15 minute">` +
+      `aria-label="15-minute DAM Prices">` +
       grid + xLabels + winShape + bars + thrShape + nowShape +
       `</svg>`;
 
-    // ---- legenda
+    // ---- legend
     legend.innerHTML =
-      `<span><i class="swatch" style="background:${RAMP[1][1]}"></i>Pret PZU (mai inchis = mai scump)</span>` +
+      `<span><i class="swatch" style="background:${RAMP[1][1]}"></i>DAM Price (darker = more expensive)</span>` +
       (win
-        ? `<span><i class="swatch line" style="background:${WINDOW_COLOR}"></i>Fereastra optima${NBSP}${esc(
+        ? `<span><i class="swatch line" style="background:${WINDOW_COLOR}"></i>Optimal window${NBSP}${esc(
             win.label
           )}</span>`
         : "") +
       (d.threshold != null
-        ? `<span><i class="swatch dash"></i>Prag ${fmtPrice(
+        ? `<span><i class="swatch dash"></i>Threshold ${fmtPrice(
             d.threshold
           )}</span>`
         : "") +
       (!d.tomorrowValid && this._config.span !== "today"
-        ? `<span>Preturile de maine apar dupa 13:00–14:00</span>`
+        ? `<span>Tomorrow's prices appear after 13:00–14:00</span>`
         : "");
 
     // ---- tooltip
@@ -353,7 +353,7 @@ class OpcomPzuCard extends HTMLElement {
       const i = Number(target.dataset.i);
       const r = rows[i];
       const dt = new Date(r.t);
-      const day = dt.toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" });
+      const day = dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
       tip.innerHTML = `<b>${fmtPrice(r.v)}</b> ${esc(d.unit)}<br>${esc(day)} ${fmtHour(dt)}`;
       const box = this._els.card.getBoundingClientRect();
       tip.classList.add("on");
@@ -375,7 +375,7 @@ if (!window.customCards.some((c) => c.type === "opcom-pzu-card")) {
     type: "opcom-pzu-card",
     name: "OPCOM PZU",
     preview: true,
-    description: "Preturi PZU la 15 minute, cu fereastra optima de injectie in retea.",
+    description: "15-minute DAM Prices, with optimal grid injection window.",
     documentationURL: "https://github.com/chindrisadrian/opcom",
   });
 }

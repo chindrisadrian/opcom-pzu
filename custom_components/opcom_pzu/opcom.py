@@ -1,6 +1,6 @@
-"""Logica pura OPCOM PZU: parsare CSV, statistici si ferestre de injectie.
+"""Pure OPCOM PZU logic: CSV parsing, statistics, and injection windows.
 
-Modulul nu importa nimic din Home Assistant, ca sa poata fi testat separat.
+The module does not import anything from Home Assistant, so it can be tested separately.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ URL_TEMPLATE = (
 ZONE = "Romania"
 RESOLUTION_TAG = "PT15M"
 SLOT_MINUTES = 15
-MIN_SLOTS = 92  # o zi are 96 de intervale, 92 sau 100 la schimbarea orei
+MIN_SLOTS = 92  # a day has 96 intervals, 92 or 100 during daylight saving time changes
 
 WINDOW_SPECS: tuple[tuple[float, str], ...] = (
     (0.5, "best_window_30m"),
@@ -30,16 +30,16 @@ WINDOW_SPECS: tuple[tuple[float, str], ...] = (
 
 
 def build_url(day: date) -> str:
-    """Adresa exportului CSV pentru o zi de livrare."""
+    """The URL of the CSV export for a delivery day."""
     return URL_TEMPLATE.format(d=day.day, m=day.month, y=day.year)
 
 
 def _num(raw: str) -> float:
-    """Numar din CSV. Exportul OPCOM foloseste punctul zecimal, dar acceptam si
-    formatul romanesc (1.234,56) in caz ca sursa se schimba."""
+    """Number from CSV. The OPCOM export uses a decimal point, but we also accept the
+    Romanian format (1.234,56) in case the source changes."""
     s = raw.strip().strip('"').replace(" ", "").replace("\xa0", "")
     if not s:
-        raise ValueError("gol")
+        raise ValueError("empty")
     if "," in s and "." in s:
         if s.rfind(",") > s.rfind("."):
             s = s.replace(".", "").replace(",", ".")
@@ -51,14 +51,14 @@ def _num(raw: str) -> float:
 
 
 def parse_csv(text: str, day: date, tz: tzinfo) -> list[dict[str, Any]]:
-    """CSV OPCOM -> lista de intervale cu marcaje de timp locale.
+    """OPCOM CSV -> list of intervals with local timestamps.
 
-    Randurile utile arata asa:
+    Useful rows look like this:
         "Romania","1","1074.94","1153.1","912.8","1153.1","PT15M"
-    Antetul, notele si tabelul de sinteza ROPEX sunt ignorate.
+    The header, notes, and the ROPEX summary table are ignored.
 
-    Marcajele se construiesc pornind de la miezul noptii local convertit in UTC,
-    adunand cate 15 minute in UTC — asa ies corect si zilele cu schimbare de ora.
+    Timestamps are built starting from local midnight converted to UTC,
+    adding 15 minutes in UTC — this ensures daylight saving time changes are correct.
     """
     rows: dict[int, dict[str, Any]] = {}
     for fields in csv.reader(io.StringIO(text)):
@@ -137,16 +137,16 @@ def day_stats(slots: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _daymark(iso_start: str, ref: datetime | None) -> str:
-    """Sufix ' (maine)' daca intervalul e in alta zi decat `ref`."""
+    """Suffix ' (tomorrow)' if the interval is on a different day than `ref`."""
     if ref is None:
         return ""
-    return "" if iso_start[:10] == ref.strftime("%Y-%m-%d") else " (maine)"
+    return "" if iso_start[:10] == ref.strftime("%Y-%m-%d") else " (tomorrow)"
 
 
 def best_window(
     slots: list[dict[str, Any]], hours: float, ref: datetime | None = None
 ) -> dict[str, Any] | None:
-    """Fereastra continua de `hours` ore cu media cea mai mare (fereastra glisanta)."""
+    """Continuous window of `hours` hours with the highest average (sliding window)."""
     n = int(round(hours * 60 / SLOT_MINUTES))
     if n <= 0 or len(slots) < n:
         return None
@@ -189,7 +189,7 @@ def top_slots(
 
 
 def compact(slots: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Forma redusa pentru atributele entitatilor si pentru card."""
+    """Reduced form for entity attributes and for the card."""
     return [
         {"interval": s["interval"], "start": s["start"], "hour": s["hour"], "value": s["value"]}
         for s in slots
@@ -202,7 +202,7 @@ def build_payload(
     now: datetime,
     top: int = 8,
 ) -> dict[str, Any]:
-    """Toate valorile derivate pe care le folosesc entitatile si cardul."""
+    """All derived values used by the entities and the card."""
     now_ts = now.timestamp()
 
     current = next(

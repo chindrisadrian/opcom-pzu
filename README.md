@@ -1,240 +1,195 @@
-# OPCOM PZU — preturi la 15 minute pentru Home Assistant
+# OPCOM PZU — 15-minute prices for Home Assistant
 
 [![hacs][hacs-badge]][hacs] [![validare][ci-badge]][ci]
 
-Integrare Home Assistant pentru preturile din **Piata pentru Ziua Urmatoare**
-operata de OPCOM, in rezolutie de 15 minute. Iti arata cele 96 de intervale ale
-zilei (plus ziua urmatoare, dupa publicare) si iti spune **cand sa injectezi in
-retea**: cele mai scumpe intervale, cea mai buna fereastra continua si un semnal
-binar pe care il legi direct de invertor.
+Home Assistant integration for prices from the **Day-Ahead Market** operated by OPCOM, in 15-minute resolution. It shows you the 96 intervals of the day (plus the next day, after publication) and tells you **when to inject into the grid**: the most expensive intervals, the best continuous window, and a binary signal that you can link directly to your inverter.
 
-Vine cu **card propriu** — nu ai nevoie de apexcharts-card sau de alta resursa
-de frontend. Cardul e inregistrat automat de integrare.
+It comes with its **own custom card** — you don't need `apexcharts-card` or any other frontend resource. The card is registered automatically by the integration.
 
-**Sursa datelor:** exportul CSV oficial al OPCOM, indicele `ROPEX_DAM_15min`,
-in Lei/MWh brut, fara nicio ajustare.
+**Data source:** the official OPCOM CSV export, the `ROPEX_DAM_15min` index, in gross Lei/MWh, without any adjustment.
 
 ---
 
-## Instalare
+## Installation
 
-### Prin HACS (recomandat)
+### Via HACS (recommended)
 
-1. HACS → meniul din dreapta sus → **Custom repositories**
-2. Adresa `https://github.com/chindrisadrian/opcom`, categoria **Integration**
-3. Cauta **OPCOM PZU** in HACS si apasa **Download**
-4. Reporneste Home Assistant
-5. **Settings → Devices & Services → Add Integration** → cauta **OPCOM PZU**
+1. HACS → top right menu → **Custom repositories**
+2. URL `https://github.com/chindrisadrian/opcom-pzu`, category **Integration**
+3. Search for **OPCOM PZU** in HACS and click **Download**
+4. Restart Home Assistant
+5. **Settings → Devices & Services → Add Integration** → search for **OPCOM PZU**
 
-La adaugare alegi durata ferestrei de injectie, pragul de pret si percentila.
-Toate se pot schimba oricand, fie din **Configure**, fie direct din entitatile
-`number` si `select` pe care le creeaza integrarea.
+When adding, you choose the injection window duration, the price threshold, and the percentile. They can all be changed at any time, either from **Configure**, or directly from the `number` and `select` entities that the integration creates.
 
 ### Manual
 
-Copiaza folderul `custom_components/opcom_pzu/` in `/config/custom_components/`
-si reporneste.
+Copy the `custom_components/opcom_pzu/` folder into `/config/custom_components/` and restart.
 
-### Cardul
+### The Card
 
-Dupa instalare, in editorul de dashboard apasa **+ Add card** si cauta
-**OPCOM PZU**. Nu trebuie sa adaugi nimic la resurse — integrarea se ocupa.
+After installation, in the dashboard editor click **+ Add card** and search for **OPCOM PZU**. You don't need to add anything to resources — the integration handles it.
 
-Daca preferi YAML:
+If you prefer YAML:
 
 ```yaml
 type: custom:opcom-pzu-card
 ```
 
-Atat. Cardul isi gaseste singur senzorul.
+That's it. The card finds its sensor automatically.
 
-| Optiune | Implicit | Ce face |
+| Option | Default | What it does |
 |---|---|---|
-| `entity` | detectat automat | senzorul de pret, daca vrei sa-l fixezi |
-| `title` | `Pret PZU la 15 minute` | titlul cardului |
-| `span` | `48h` | `48h` pentru azi + maine, `today` doar pentru ziua curenta |
-| `height` | `200` | inaltimea graficului in pixeli |
+| `entity` | automatically detected | the price sensor, if you want to pin it |
+| `title` | `Pret PZU la 15 minute` | card title |
+| `span` | `48h` | `48h` for today + tomorrow, `today` for just the current day |
+| `height` | `200` | graph height in pixels |
 
 ---
 
-## Entitatile create
+## Created Entities
 
-### Senzori
+### Sensors
 
-| Entitate | Ce arata |
+| Entity | What it shows |
 |---|---|
-| `sensor.opcom_pzu_pret_curent` | pretul intervalului de 15 min in care esti acum; **toate datele sunt in atribute** |
-| `sensor.opcom_pzu_maxim_azi` / `minim_azi` / `mediu_azi` | statistici pe ziua curenta |
-| `sensor.opcom_pzu_ora_de_varf_azi` | ora celui mai scump interval |
-| `sensor.opcom_pzu_maxim_maine` | varful de maine, dupa publicare |
-| `sensor.opcom_pzu_pozitie_pret_azi` | percentila pretului curent (100 % = cel mai scump interval al zilei) |
-| `sensor.opcom_pzu_fereastra_injectie` | cea mai buna fereastra continua, ex. `19:30 - 21:30` |
-| `sensor.opcom_pzu_pret_fereastra_injectie` | pretul mediu din acea fereastra |
-| `sensor.opcom_pzu_urmatorul_varf` | cel mai scump interval care urmeaza |
-| `sensor.opcom_pzu_minute_pana_la_varf` | cate minute mai sunt pana la el |
-| `sensor.opcom_pzu_ore_top_injectie` | cele mai scumpe 8 intervale din orizontul ramas |
+| `sensor.opcom_pzu_current_price` | the price of the 15-min interval you are in right now; **all data is in attributes** |
+| `sensor.opcom_pzu_max_today` / `min_today` / `avg_today` | statistics for the current day |
+| `sensor.opcom_pzu_peak_hour_today` | the time of the most expensive interval |
+| `sensor.opcom_pzu_max_tomorrow` | tomorrow's peak, after publication |
+| `sensor.opcom_pzu_price_position_today` | current price percentile (100% = the most expensive interval of the day) |
+| `sensor.opcom_pzu_injection_window` | the best continuous window, e.g. `19:30 - 21:30` |
+| `sensor.opcom_pzu_injection_window_price` | the average price in that window |
+| `sensor.opcom_pzu_next_peak` | the most expensive upcoming interval |
+| `sensor.opcom_pzu_minutes_to_peak` | how many minutes are left until it |
+| `sensor.opcom_pzu_top_injection_hours` | the 8 most expensive intervals in the remaining horizon |
 
-### Semnale binare
+### Binary Signals
 
-| Entitate | Cand e `on` |
+| Entity | When it is `on` |
 |---|---|
-| `binary_sensor.opcom_pzu_moment_bun_injectie` | **acesta se leaga de invertor** — suntem in fereastra optima **sau** pretul a trecut de prag |
-| `binary_sensor.opcom_pzu_fereastra_injectie_activa` | suntem in interiorul ferestrei optime |
-| `binary_sensor.opcom_pzu_pret_peste_prag` | pretul curent a trecut de pragul absolut |
-| `binary_sensor.opcom_pzu_pret_in_top_percentila` | pretul curent e in percentila configurata |
+| `binary_sensor.opcom_pzu_good_moment_to_export` | **this is what you link to the inverter** — we are in the optimal window **or** the price has crossed the threshold |
+| `binary_sensor.opcom_pzu_injection_window_active` | we are inside the optimal window |
+| `binary_sensor.opcom_pzu_price_above_threshold` | the current price has crossed the absolute threshold |
+| `binary_sensor.opcom_pzu_price_in_top_percentile` | the current price is in the configured percentile |
 
-### Reglaje
+### Settings
 
-| Entitate | Rol |
+| Entity | Role |
 |---|---|
-| `select.opcom_pzu_durata_fereastra_injectie` | 30 min / 1 h / 2 h / 3 h / 4 h |
-| `number.opcom_pzu_prag_injectie` | pragul absolut, in Lei/MWh |
-| `number.opcom_pzu_percentila_injectie` | pragul relativ, in percentile |
+| `select.opcom_pzu_injection_window_duration` | 30 min / 1 h / 2 h / 3 h / 4 h |
+| `number.opcom_pzu_injection_threshold` | absolute threshold, in Lei/MWh |
+| `number.opcom_pzu_injection_percentile` | relative threshold, in percentiles |
 
-Pune durata ferestrei pe cat timp iti ia sa golesti bateria la puterea de export
-dorita. Fereastra e cautata pe **orizontul ramas**: restul zilei de azi plus
-toata ziua de maine, daca preturile sunt publicate.
-
-> **Despre `entity_id`-uri:** numele entitatilor vin din traduceri, deci
-> identificatorii de mai sus apar asa daca interfata ta e pe romana. Pe o
-> instalare in engleza vor fi `sensor.opcom_pzu_current_price`,
-> `binary_sensor.opcom_pzu_good_moment_to_export` s.a.m.d. Le vezi si le poti
-> redenumi in **Settings → Devices & Services → Entities**.
+Set the window duration to how long it takes to empty your battery at the desired export power. The window is searched on the **remaining horizon**: the rest of today plus all of tomorrow, if the prices are published.
 
 ---
 
-## Automatizari
+## Automations
 
-Cel mai simplu punct de plecare:
+The simplest starting point:
 
 ```yaml
 automation:
-  - alias: "OPCOM - porneste injectia"
+  - alias: "OPCOM - start injection"
     triggers:
       - trigger: state
-        entity_id: binary_sensor.opcom_pzu_moment_bun_injectie
+        entity_id: binary_sensor.opcom_pzu_good_moment_to_export
         to: "on"
     conditions:
       - condition: numeric_state
-        entity_id: sensor.baterie_nivel                 # entitatea ta
+        entity_id: sensor.battery_level                 # your entity
         above: 30
     actions:
       - action: switch.turn_on
         target:
-          entity_id: switch.invertor_descarcare_baterie # entitatea ta
+          entity_id: switch.inverter_battery_discharge  # your entity
 
-  - alias: "OPCOM - opreste injectia"
+  - alias: "OPCOM - stop injection"
     triggers:
       - trigger: state
-        entity_id: binary_sensor.opcom_pzu_moment_bun_injectie
+        entity_id: binary_sensor.opcom_pzu_good_moment_to_export
         to: "off"
     actions:
       - action: switch.turn_off
         target:
-          entity_id: switch.invertor_descarcare_baterie
+          entity_id: switch.inverter_battery_discharge
 ```
 
-Semnalul are un atribut `motiv` care spune de ce s-a aprins — util in jurnal si
-in notificari.
+The signal has a `reason` attribute which tells you why it turned on — useful in logs and notifications.
 
-Notificare zilnica cu orele de maine:
+Daily notification with tomorrow's hours:
 
 ```yaml
 automation:
-  - alias: "OPCOM - orele de maine"
+  - alias: "OPCOM - tomorrow's hours"
     triggers:
       - trigger: state
-        entity_id: sensor.opcom_pzu_pret_curent
+        entity_id: sensor.opcom_pzu_current_price
         attribute: tomorrow_valid
         to: true
     actions:
       - action: notify.persistent_notification
         data:
-          title: "PZU maine"
+          title: "DAM Tomorrow"
           message: >-
-            Varf {{ states('sensor.opcom_pzu_maxim_maine') }} Lei/MWh la
-            {{ state_attr('sensor.opcom_pzu_maxim_maine','ora') }}.
-            Cele mai bune intervale: {{ states('sensor.opcom_pzu_ore_top_injectie') }}
+            Peak {{ states('sensor.opcom_pzu_max_tomorrow') }} Lei/MWh at
+            {{ state_attr('sensor.opcom_pzu_max_tomorrow','hour') }}.
+            Best intervals: {{ states('sensor.opcom_pzu_top_injection_hours') }}
 ```
 
 ---
 
-## Cum functioneaza
+## How it works
 
-Integrarea descarca CSV-ul **o singura data pe zi** pentru fiecare zi de livrare
-si tine rezultatul in memorie. La fiecare 5 minute — si exact la granita fiecarui
-interval de 15 minute — recalculeaza doar valorile derivate, fara sa mai atinga
-OPCOM. Preturile pentru ziua urmatoare sunt cerute doar dupa ora 12:00, cu o
-pauza de 10 minute intre incercari, pana cand apar.
+The integration downloads the CSV **only once a day** for each delivery day and keeps the result in memory. Every 5 minutes — and exactly at the boundary of each 15-minute interval — it recalculates only the derived values, without touching OPCOM again. Prices for the next day are requested only after 12:00, with a 10-minute pause between attempts, until they appear.
 
-Marcajele de timp se construiesc pornind de la miezul noptii local convertit in
-UTC, adunand cate 15 minute in UTC. Asa ies corect si zilele cu schimbare de ora,
-care au 92 sau 100 de intervale in loc de 96.
+Timestamps are built starting from local midnight converted to UTC, adding 15 minutes in UTC. This ensures days with daylight saving time changes (which have 92 or 100 intervals instead of 96) are calculated correctly.
 
-Atributele grele (cele 192 de intervale) sunt marcate ca **neinregistrate**, deci
-nu umfla baza de date, dar raman disponibile in timp real pentru card si pentru
-sabloane.
+Heavy attributes (the 192 intervals) are marked as **unrecorded**, so they don't bloat your database, but remain available in real-time for the card and templates.
 
 ---
 
-## Depanare
+## Troubleshooting
 
-**Integrarea nu porneste.** Verifica jurnalul din `Settings → System → Logs`.
-Pe pagina integrarii ai si **Download diagnostics**, care include ultima eroare
-de retea si cate intervale au fost incarcate.
+**The integration doesn't start.** Check the log in `Settings → System → Logs`. On the integration page you also have **Download diagnostics**, which includes the last network error and how many intervals were loaded.
 
-**`Custom element doesn't exist: opcom-pzu-card`.** Inseamna ca fisierul cardului
-nu a ajuns in browser. Verifica, in ordine:
+**`Custom element doesn't exist: opcom-pzu-card`.** This means the card file didn't reach the browser. Check, in order:
 
-1. Deschide intr-un tab `http://<adresa-ta-ha>:8123/opcom_pzu_static/opcom-pzu-card.js`.
-   Daca vezi codul JavaScript, serverul e in regula si problema e doar de cache —
-   treci la pasul 3. Daca primesti 404, treci la pasul 2.
-2. In `Settings → System → Logs`, cauta `opcom_pzu`. La pornire, integrarea scrie
-   o linie de tip `Cardul OPCOM PZU este servit la /opcom_pzu_static/...`. Daca in
-   loc de ea vezi o eroare, aceasta iti spune exact ce lipseste.
-3. Goleste cache-ul browserului pentru Home Assistant, nu doar Ctrl+F5 — aplicatia
-   e un PWA cu service worker, care serveste vechea lista de resurse. Cel mai
-   simplu test: deschide Home Assistant intr-o fereastra privata.
+1. Open `http://<your-ha-address>:8123/opcom_pzu_static/opcom-pzu-card.js` in a tab. If you see the JavaScript code, the server is fine and the problem is just caching — skip to step 3. If you get a 404, go to step 2.
+2. In `Settings → System → Logs`, search for `opcom_pzu`. At startup, the integration writes a line like `The OPCOM PZU card is served at /opcom_pzu_static/...`. If you see an error instead, it tells you exactly what's missing.
+3. Clear the browser cache for Home Assistant, not just Ctrl+F5 — the app is a PWA with a service worker, which serves the old list of resources. The simplest test: open Home Assistant in an incognito window.
 
-Ca solutie de rezerva poti adauga resursa manual: `Settings → Dashboards →
-meniul din dreapta sus → Resources → Add resource`, adresa
-`/opcom_pzu_static/opcom-pzu-card.js`, tipul **JavaScript Module**.
+As a fallback you can add the resource manually: `Settings → Dashboards → top right menu → Resources → Add resource`, url `/opcom_pzu_static/opcom-pzu-card.js`, type **JavaScript Module**.
 
-Pagina integrarii are si **Download diagnostics**, unde sectiunea `card` arata
-daca fisierul a fost gasit si daca resursa a fost inregistrata.
+The integration page also has **Download diagnostics**, where the `card` section shows if the file was found and if the resource was registered.
 
-**Preturile de maine lipsesc.** Sunt publicate de regula intre 13:00 si 14:00.
-Pana atunci atributul `tomorrow_valid` este `false`.
+**Tomorrow's prices are missing.** They are usually published between 13:00 and 14:00. Until then the `tomorrow_valid` attribute is `false`.
 
-**Orele sunt decalate.** Verifica fusul orar din `Settings → System → General`.
-Integrarea foloseste fusul configurat in Home Assistant.
+**Hours are shifted.** Check the time zone in `Settings → System → General`. The integration uses the timezone configured in Home Assistant.
 
 ---
 
-## Note
+## Notes
 
-Preturile sunt **brute, de bursa, in Lei/MWh**, asa cum le publica OPCOM. Ce
-incasezi efectiv la injectie depinde de contractul tau — schema de prosumator sau
-contract dinamic, comisionul furnizorului, TVA. Pentru bani/kWh imparte la 10.
+Prices are **raw, from the exchange, in Lei/MWh**, as published by OPCOM. What you actually earn upon injection depends on your contract — prosumer scheme or dynamic contract, supplier commission, VAT. For money/kWh divide by 10.
 
-PZU este piata pentru ziua urmatoare: preturile se stabilesc cu o zi inainte si
-nu se mai schimba. Nu e acelasi lucru cu pretul de dezechilibru din piata de
-echilibrare.
+DAM is the Day-Ahead Market: prices are set one day in advance and do not change. It is not the same as the imbalance price from the balancing market.
 
-Proiect neoficial, fara nicio legatura cu OPCOM SA.
+Unofficial project, not affiliated with OPCOM SA.
 
 ---
 
-## Dezvoltare
+## Development
 
 ```bash
-python3 tests/test_opcom.py       # parsare si calcul
-python3 tests/test_structure.py   # manifest, traduceri, structura repo
+python3 tests/test_opcom.py       # parsing and calculation
+python3 tests/test_structure.py   # manifest, translations, repo structure
 ```
 
-Licenta MIT.
+MIT License.
 
 [hacs]: https://github.com/hacs/integration
 [hacs-badge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
-[ci]: https://github.com/chindrisadrian/opcom/actions/workflows/validate.yml
-[ci-badge]: https://github.com/chindrisadrian/opcom/actions/workflows/validate.yml/badge.svg
+[ci]: https://github.com/chindrisadrian/opcom-pzu/actions/workflows/validate.yml
+[ci-badge]: https://github.com/chindrisadrian/opcom-pzu/actions/workflows/validate.yml/badge.svg

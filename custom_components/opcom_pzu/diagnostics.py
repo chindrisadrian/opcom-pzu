@@ -1,4 +1,4 @@
-"""Diagnostice pentru OPCOM PZU."""
+"""Diagnostics for OPCOM PZU."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from .const import CARD_FILENAME, CARD_REGISTERED, CARD_URL_BASE, DOMAIN
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
-    """Datele utile pentru raportarea unei probleme (fara informatii personale)."""
+    """Useful data for bug reporting (without personal information)."""
     runtime = hass.data[DOMAIN][entry.entry_id]
     coordinator = runtime.coordinator
     data = coordinator.data or {}

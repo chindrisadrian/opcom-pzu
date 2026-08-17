@@ -1,4 +1,4 @@
-"""Constante pentru integrarea OPCOM PZU."""
+"""Constants for the OPCOM PZU integration."""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ from typing import Final
 DOMAIN: Final = "opcom_pzu"
 NAME: Final = "OPCOM PZU"
 MANUFACTURER: Final = "OPCOM"
-MODEL: Final = "Piata pentru Ziua Urmatoare (ROPEX_DAM_15min)"
+MODEL: Final = "Day-Ahead Market (ROPEX_DAM_15min)"
 
 UPDATE_INTERVAL: Final = timedelta(minutes=5)
 REQUEST_TIMEOUT: Final = 30
 PRICE_UNIT: Final = "Lei/MWh"
 
-# --- optiuni configurabile -------------------------------------------------
+# --- configurable options --------------------------------------------------
 CONF_THRESHOLD: Final = "threshold"
 CONF_PERCENTILE: Final = "percentile"
 CONF_WINDOW: Final = "window_hours"
@@ -28,7 +28,7 @@ MAX_THRESHOLD: Final = 5000.0
 MIN_PERCENTILE: Final = 50.0
 MAX_PERCENTILE: Final = 99.0
 
-# eticheta afisata -> ore, si cheia ferestrei din payload
+# displayed label -> hours, and the window key from payload
 WINDOW_CHOICES: Final[dict[str, tuple[float, str]]] = {
     "30 min": (0.5, "best_window_30m"),
     "1 h": (1.0, "best_window_1h"),
@@ -40,7 +40,7 @@ WINDOW_OPTIONS: Final[list[str]] = list(WINDOW_CHOICES)
 
 
 def window_label(hours: float) -> str:
-    """Eticheta de select pentru o durata in ore."""
+    """Select label for a duration in hours."""
     for label, (h, _) in WINDOW_CHOICES.items():
         if abs(h - hours) < 1e-6:
             return label
@@ -48,14 +48,14 @@ def window_label(hours: float) -> str:
 
 
 def window_key(hours: float) -> str:
-    """Cheia din payload pentru o durata in ore."""
+    """The payload key for a duration in hours."""
     for _, (h, key) in WINDOW_CHOICES.items():
         if abs(h - hours) < 1e-6:
             return key
     return "best_window_2h"
 
 
-# --- resursa de frontend ---------------------------------------------------
+# --- frontend resource -----------------------------------------------------
 CARD_FILENAME: Final = "opcom-pzu-card.js"
 CARD_URL_BASE: Final = f"/{DOMAIN}_static"
 CARD_REGISTERED: Final = f"{DOMAIN}_card_registered"

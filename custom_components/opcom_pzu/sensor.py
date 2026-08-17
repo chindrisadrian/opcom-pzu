@@ -1,4 +1,4 @@
-"""Senzorii OPCOM PZU."""
+"""OPCOM PZU sensors."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from .const import DOMAIN, PRICE_UNIT
 from .coordinator import OpcomCoordinator
 from .entity import OpcomEntity
 
-# atributele grele nu au ce cauta in baza de date
+# heavy attributes shouldn't be stored in the database
 BULK_ATTRS = frozenset(
     {
         "raw_today",
@@ -36,7 +36,7 @@ BULK_ATTRS = frozenset(
         "best_window_4h",
         "next_peak",
         "window",
-        "intervale",
+        "intervals",
     }
 )
 
@@ -52,7 +52,7 @@ def _get(payload: dict[str, Any], *path: str) -> Any:
 
 @dataclass(frozen=True, kw_only=True)
 class OpcomSensorDescription(SensorEntityDescription):
-    """Descriere de senzor cu functiile de valoare si atribute."""
+    """Sensor description with value and attribute functions."""
 
     value_fn: Callable[[OpcomCoordinator], StateType]
     attrs_fn: Callable[[OpcomCoordinator], dict[str, Any]] | None = None
@@ -76,7 +76,7 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_fn=lambda c: (c.data or {}).get("state"),
-        # cardul citeste totul de aici, deci nu are nevoie de alte entitati
+        # the card reads everything from here, so it doesn't need other entities
         attrs_fn=lambda c: {
             **{k: v for k, v in (c.data or {}).items() if k not in ("state", "last_update")},
             "threshold": c.settings.threshold,
@@ -92,7 +92,7 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_fn=lambda c: _get(c.data or {}, "today", "max"),
-        attrs_fn=lambda c: {"ora": _get(c.data or {}, "today", "max_hour")},
+        attrs_fn=lambda c: {"hour": _get(c.data or {}, "today", "max_hour")},
     ),
     OpcomSensorDescription(
         key="min_today",
@@ -101,7 +101,7 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_fn=lambda c: _get(c.data or {}, "today", "min"),
-        attrs_fn=lambda c: {"ora": _get(c.data or {}, "today", "min_hour")},
+        attrs_fn=lambda c: {"hour": _get(c.data or {}, "today", "min_hour")},
     ),
     OpcomSensorDescription(
         key="mean_today",
@@ -111,7 +111,7 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=lambda c: _get(c.data or {}, "today", "mean"),
         attrs_fn=lambda c: {
-            "mediana": _get(c.data or {}, "today", "median"),
+            "median": _get(c.data or {}, "today", "median"),
             "p75": _get(c.data or {}, "today", "p75"),
             "p90": _get(c.data or {}, "today", "p90"),
         },
@@ -129,10 +129,10 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=lambda c: _get(c.data or {}, "tomorrow", "max"),
         attrs_fn=lambda c: {
-            "ora": _get(c.data or {}, "tomorrow", "max_hour"),
-            "medie": _get(c.data or {}, "tomorrow", "mean"),
-            "minim": _get(c.data or {}, "tomorrow", "min"),
-            "publicat": (c.data or {}).get("tomorrow_valid"),
+            "hour": _get(c.data or {}, "tomorrow", "max_hour"),
+            "mean": _get(c.data or {}, "tomorrow", "mean"),
+            "min": _get(c.data or {}, "tomorrow", "min"),
+            "published": (c.data or {}).get("tomorrow_valid"),
         },
     ),
     OpcomSensorDescription(
@@ -142,8 +142,8 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda c: (c.data or {}).get("current_percentile_today"),
         attrs_fn=lambda c: {
-            "loc_in_zi": (c.data or {}).get("current_rank_today"),
-            "din": _get(c.data or {}, "today", "slots"),
+            "rank_today": (c.data or {}).get("current_rank_today"),
+            "of": _get(c.data or {}, "today", "slots"),
         },
     ),
     OpcomSensorDescription(
@@ -151,12 +151,12 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         icon="mdi:transmission-tower-export",
         value_fn=lambda c: (c.window() or {}).get("label"),
         attrs_fn=lambda c: {
-            "inceput": (c.window() or {}).get("start"),
-            "sfarsit": (c.window() or {}).get("end"),
-            "pret_mediu": (c.window() or {}).get("avg"),
-            "pret_minim": (c.window() or {}).get("min"),
-            "pret_maxim": (c.window() or {}).get("max"),
-            "durata_ore": (c.window() or {}).get("hours"),
+            "start": (c.window() or {}).get("start"),
+            "end": (c.window() or {}).get("end"),
+            "average_price": (c.window() or {}).get("avg"),
+            "min_price": (c.window() or {}).get("min"),
+            "max_price": (c.window() or {}).get("max"),
+            "duration_hours": (c.window() or {}).get("hours"),
         },
     ),
     OpcomSensorDescription(
@@ -175,8 +175,8 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=lambda c: _get(c.data or {}, "next_peak", "value"),
         attrs_fn=lambda c: {
-            "ora": _get(c.data or {}, "next_peak", "label"),
-            "inceput": _get(c.data or {}, "next_peak", "start"),
+            "hour": _get(c.data or {}, "next_peak", "label"),
+            "start": _get(c.data or {}, "next_peak", "start"),
         },
     ),
     OpcomSensorDescription(
@@ -192,7 +192,7 @@ SENSORS: tuple[OpcomSensorDescription, ...] = (
             s["label"] for s in (c.data or {}).get("best_slots", [])
         )
         or None,
-        attrs_fn=lambda c: {"intervale": (c.data or {}).get("best_slots", [])},
+        attrs_fn=lambda c: {"intervals": (c.data or {}).get("best_slots", [])},
     ),
 )
 
@@ -205,7 +205,7 @@ async def async_setup_entry(
 
 
 class OpcomSensor(OpcomEntity, SensorEntity):
-    """Un senzor descris de OpcomSensorDescription."""
+    """A sensor described by OpcomSensorDescription."""
 
     entity_description: OpcomSensorDescription
     _unrecorded_attributes = BULK_ATTRS

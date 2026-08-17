@@ -1,4 +1,4 @@
-"""Clasa de baza pentru entitatile OPCOM PZU."""
+"""Base class for OPCOM PZU entities."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from .coordinator import OpcomCoordinator
 
 
 class OpcomEntity(CoordinatorEntity[OpcomCoordinator]):
-    """Toate entitatile apartin aceluiasi dispozitiv logic."""
+    """All entities belong to the same logical device."""
 
     _attr_has_entity_name = True
 

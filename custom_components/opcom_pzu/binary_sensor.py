@@ -1,4 +1,4 @@
-"""Semnalele binare pentru automatizarile de injectie."""
+"""Binary signals for injection automations."""
 
 from __future__ import annotations
 
@@ -55,12 +55,12 @@ def _good_moment(c: OpcomCoordinator) -> bool | None:
 def _reason(c: OpcomCoordinator) -> dict[str, Any]:
     if _in_window(c):
         win = c.window() or {}
-        return {"motiv": f"fereastra optima ({win.get('label')})"}
+        return {"reason": f"optimal window ({win.get('label')})"}
     if _above_threshold(c):
         return {
-            "motiv": f"pret peste prag ({(c.data or {}).get('state')} Lei/MWh)",
+            "reason": f"price above threshold ({(c.data or {}).get('state')} Lei/MWh)",
         }
-    return {"motiv": "nu e momentul"}
+    return {"reason": "not the right time"}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -81,22 +81,22 @@ BINARY_SENSORS: tuple[OpcomBinaryDescription, ...] = (
         icon="mdi:transmission-tower-export",
         value_fn=_in_window,
         attrs_fn=lambda c: {
-            "incepe_la": (c.window() or {}).get("start"),
-            "se_termina_la": (c.window() or {}).get("end"),
-            "pret_mediu": (c.window() or {}).get("avg"),
+            "starts_at": (c.window() or {}).get("start"),
+            "ends_at": (c.window() or {}).get("end"),
+            "average_price": (c.window() or {}).get("avg"),
         },
     ),
     OpcomBinaryDescription(
         key="above_threshold",
         icon="mdi:cash-check",
         value_fn=_above_threshold,
-        attrs_fn=lambda c: {"prag": c.settings.threshold},
+        attrs_fn=lambda c: {"threshold": c.settings.threshold},
     ),
     OpcomBinaryDescription(
         key="in_percentile",
         icon="mdi:podium-gold",
         value_fn=_in_percentile,
-        attrs_fn=lambda c: {"percentila": c.settings.percentile},
+        attrs_fn=lambda c: {"percentile": c.settings.percentile},
     ),
 )
 

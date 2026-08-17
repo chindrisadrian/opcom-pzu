@@ -1,6 +1,6 @@
-"""Verifica structura repo-ului asa cum o verifica hassfest si HACS.
+"""Checks the repo structure as hassfest and HACS do.
 
-Ruleaza cu:  python3 tests/test_structure.py
+Run with:  python3 tests/test_structure.py
 """
 
 import ast
@@ -22,7 +22,7 @@ def check(label, cond, extra=""):
         ok = False
 
 
-# ---- fisiere obligatorii --------------------------------------------------
+# ---- mandatory files ------------------------------------------------------
 for rel in ("hacs.json", "README.md", "LICENSE",
             "custom_components/opcom_pzu/manifest.json",
             "custom_components/opcom_pzu/__init__.py",
@@ -31,29 +31,29 @@ for rel in ("hacs.json", "README.md", "LICENSE",
             "custom_components/opcom_pzu/translations/en.json",
             "custom_components/opcom_pzu/translations/ro.json",
             "custom_components/opcom_pzu/www/opcom-pzu-card.js"):
-    check(f"exista {rel}", (ROOT / rel).is_file())
+    check(f"{rel} exists", (ROOT / rel).is_file())
 
 # ---- manifest -------------------------------------------------------------
 manifest = json.loads((COMP / "manifest.json").read_text())
 for key in ("domain", "name", "codeowners", "documentation", "iot_class",
             "issue_tracker", "version", "config_flow"):
     check(f"manifest are '{key}'", key in manifest)
-check("domain = numele folderului", manifest["domain"] == COMP.name, manifest["domain"])
+check("domain = folder name", manifest["domain"] == COMP.name, manifest["domain"])
 check("config_flow = true", manifest.get("config_flow") is True)
-check("version este semver", re.fullmatch(r"\d+\.\d+\.\d+", manifest.get("version", "")) is not None,
+check("version is semver", re.fullmatch(r"\d+\.\d+\.\d+", manifest.get("version", "")) is not None,
       manifest.get("version"))
-check("fara dependinte externe (doar stdlib + HA)", manifest.get("requirements") == [])
-check("documentation si issue_tracker pe acelasi repo",
+check("no external dependencies (only stdlib + HA)", manifest.get("requirements") == [])
+check("documentation and issue_tracker on same repo",
       manifest["issue_tracker"].startswith(manifest["documentation"]),
       f"{manifest['documentation']} / {manifest['issue_tracker']}")
 
 hacs = json.loads((ROOT / "hacs.json").read_text())
-check("hacs.json are 'name'", "name" in hacs)
-check("hacs.json cere o versiune minima de HA", "homeassistant" in hacs, hacs.get("homeassistant"))
+check("hacs.json has 'name'", "name" in hacs)
+check("hacs.json requires min HA version", "homeassistant" in hacs, hacs.get("homeassistant"))
 
-# ---- cheile de traducere ---------------------------------------------------
+# ---- translation keys -----------------------------------------------------
 def keys_from(path: Path, platform: str) -> set[str]:
-    """Cheile date ca `key="..."` in descrierile de entitati dintr-un modul."""
+    """Keys given as `key="..."` in entity descriptions of a module."""
     tree = ast.parse(path.read_text())
     found: set[str] = set()
     for node in ast.walk(tree):
@@ -78,46 +78,46 @@ for lang in ("en", "ro"):
         declared = set(entities.get(platform, {}))
         missing = keys - declared
         extra = declared - keys
-        check(f"{lang}: toate cheile {platform} sunt traduse", not missing, f"lipsesc: {missing}")
-        check(f"{lang}: fara traduceri orfane in {platform}", not extra, f"in plus: {extra}")
+        check(f"{lang}: all {platform} keys are translated", not missing, f"missing: {missing}")
+        check(f"{lang}: no orphan translations in {platform}", not extra, f"extra: {extra}")
     for step in ("config", "options"):
-        check(f"{lang}: sectiunea '{step}' exista", step in tr)
+        check(f"{lang}: section '{step}' exists", step in tr)
 
 strings = json.loads((COMP / "strings.json").read_text())
 en = json.loads((COMP / "translations" / "en.json").read_text())
-check("strings.json identic cu translations/en.json", strings == en)
+check("strings.json identical to translations/en.json", strings == en)
 
-# optiunile din config flow trebuie sa fie traduse
+# config flow options must be translated
 from_const = (COMP / "const.py").read_text()
 conf_keys = set(re.findall(r'^CONF_\w+: Final = "(\w+)"', from_const, re.M))
 for lang in ("en", "ro"):
     tr = json.loads((COMP / "translations" / f"{lang}.json").read_text())
     for step, section in (("config", "user"), ("options", "init")):
         data = tr[step]["step"][section]["data"]
-        check(f"{lang}: {step}.{section} descrie toate optiunile",
-              conf_keys <= set(data), f"lipsesc: {conf_keys - set(data)}")
+        check(f"{lang}: {step}.{section} describes all options",
+              conf_keys <= set(data), f"missing: {conf_keys - set(data)}")
 
-# ---- platformele declarate au fisier ---------------------------------------
+# ---- declared platforms have a file ---------------------------------------
 init = (COMP / "__init__.py").read_text()
 platforms = re.findall(r"Platform\.(\w+)", init)
-check("cel putin o platforma declarata", bool(platforms))
+check("at least one declared platform", bool(platforms))
 for p in platforms:
-    check(f"platforma {p.lower()} are modul", (COMP / f"{p.lower()}.py").is_file())
+    check(f"platform {p.lower()} has module", (COMP / f"{p.lower()}.py").is_file())
 
-# ---- cardul ---------------------------------------------------------------
+# ---- the card -------------------------------------------------------------
 card = (COMP / "www" / "opcom-pzu-card.js").read_text()
-check("cardul defineste elementul", 'customElements.define("opcom-pzu-card"' in card)
-check("cardul se inregistreaza in customCards", "window.customCards" in card)
-check("cardul are setConfig", "setConfig(" in card)
-check("cardul are getCardSize", "getCardSize(" in card)
-check("cardul nu incarca resurse externe",
+check("card defines element", 'customElements.define("opcom-pzu-card"' in card)
+check("card registers in customCards", "window.customCards" in card)
+check("card has setConfig", "setConfig(" in card)
+check("card has getCardSize", "getCardSize(" in card)
+check("card does not load external resources",
       not re.search(r"""(?:src|href|import)\s*[=(]\s*['"]https?://""", card))
-check("numele fisierului din const.py se potriveste",
+check("const.py filename matches",
       f'CARD_FILENAME: Final = "opcom-pzu-card.js"' in from_const)
 
-# ---- fara import-uri HA in modulul pur ------------------------------------
+# ---- no HA imports in the pure module -----------------------------------
 pure = (COMP / "opcom.py").read_text()
-check("opcom.py nu importa Home Assistant", "homeassistant" not in pure)
+check("opcom.py does not import Home Assistant", "homeassistant" not in pure)
 
-print("\n" + ("STRUCTURA E VALIDA" if ok else "EXISTA PROBLEME DE STRUCTURA"))
+print("\n" + ("STRUCTURE IS VALID" if ok else "THERE ARE STRUCTURE ISSUES"))
 sys.exit(0 if ok else 1)

@@ -1,4 +1,4 @@
-"""Reglaje numerice: pragul de injectie si percentila."""
+"""Numeric settings: injection threshold and percentile."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ async def async_setup_entry(
 
 
 class OpcomNumber(OpcomEntity, NumberEntity):
-    """Valoarea se salveaza in optiunile intrarii, deci supravietuieste repornirii."""
+    """The value is saved in the entry options, so it survives restarts."""
 
     entity_description: OpcomNumberDescription
 
@@ -81,7 +81,7 @@ class OpcomNumber(OpcomEntity, NumberEntity):
 
     @property
     def available(self) -> bool:
-        return True  # reglajele raman utilizabile chiar daca OPCOM nu raspunde
+        return True  # settings remain usable even if OPCOM doesn't respond
 
     @property
     def native_value(self) -> float:
