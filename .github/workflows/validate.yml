@@ -1,4 +1,4 @@
-name: Validare
+name: Validation
 on:
   push:
   pull_request:
@@ -16,7 +16,7 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          ignore: brands
+          ignore: brands topics
   tests:
     runs-on: ubuntu-latest
     steps:
