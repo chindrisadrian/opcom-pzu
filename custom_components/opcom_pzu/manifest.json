@@ -10,8 +10,8 @@
     "frontend"
   ],
   "documentation": "https://github.com/chindrisadrian/opcom",
-  "iot_class": "cloud_polling",
   "integration_type": "service",
+  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/chindrisadrian/opcom/issues",
   "requirements": [],
   "version": "1.0.1"
