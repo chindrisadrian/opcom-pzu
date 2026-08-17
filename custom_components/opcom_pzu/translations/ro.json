@@ -1,0 +1,64 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OPCOM PZU",
+        "description": "Preturi la 15 minute din Piata pentru Ziua Urmatoare. Poti schimba oricand reglajele de mai jos.",
+        "data": {
+          "window_hours": "Durata ferestrei de injectie",
+          "threshold": "Prag de injectie",
+          "percentile": "Percentila de injectie"
+        },
+        "data_description": {
+          "window_hours": "Cat timp iti ia sa descarci bateria la puterea de export dorita.",
+          "threshold": "Peste acest pret, semnalul de injectie devine activ.",
+          "percentile": "Alternativa relativa: 80 inseamna cele mai scumpe 20% dintre intervalele zilei."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "OPCOM PZU este deja configurat."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Reglaje OPCOM PZU",
+        "data": {
+          "window_hours": "Durata ferestrei de injectie",
+          "threshold": "Prag de injectie",
+          "percentile": "Percentila de injectie"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "price_now": { "name": "Pret curent" },
+      "max_today": { "name": "Maxim azi" },
+      "min_today": { "name": "Minim azi" },
+      "mean_today": { "name": "Mediu azi" },
+      "peak_hour_today": { "name": "Ora de varf azi" },
+      "max_tomorrow": { "name": "Maxim maine" },
+      "price_position": { "name": "Pozitie pret azi" },
+      "best_window": { "name": "Fereastra injectie" },
+      "best_window_price": { "name": "Pret fereastra injectie" },
+      "next_peak": { "name": "Urmatorul varf" },
+      "minutes_to_peak": { "name": "Minute pana la varf" },
+      "top_slots": { "name": "Ore top injectie" }
+    },
+    "binary_sensor": {
+      "good_moment": { "name": "Moment bun injectie" },
+      "in_window": { "name": "Fereastra injectie activa" },
+      "above_threshold": { "name": "Pret peste prag" },
+      "in_percentile": { "name": "Pret in top percentila" }
+    },
+    "number": {
+      "threshold": { "name": "Prag injectie" },
+      "percentile": { "name": "Percentila injectie" }
+    },
+    "select": {
+      "window_duration": { "name": "Durata fereastra injectie" }
+    }
+  }
+}
