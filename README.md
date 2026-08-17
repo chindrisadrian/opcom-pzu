@@ -183,9 +183,25 @@ sabloane.
 Pe pagina integrarii ai si **Download diagnostics**, care include ultima eroare
 de retea si cate intervale au fost incarcate.
 
-**Cardul nu apare in lista.** Reincarca pagina cu Ctrl+F5 — resursa de frontend
-se inregistreaza la pornirea Home Assistant, deci ai nevoie de o repornire dupa
-instalare.
+**`Custom element doesn't exist: opcom-pzu-card`.** Inseamna ca fisierul cardului
+nu a ajuns in browser. Verifica, in ordine:
+
+1. Deschide intr-un tab `http://<adresa-ta-ha>:8123/opcom_pzu_static/opcom-pzu-card.js`.
+   Daca vezi codul JavaScript, serverul e in regula si problema e doar de cache —
+   treci la pasul 3. Daca primesti 404, treci la pasul 2.
+2. In `Settings → System → Logs`, cauta `opcom_pzu`. La pornire, integrarea scrie
+   o linie de tip `Cardul OPCOM PZU este servit la /opcom_pzu_static/...`. Daca in
+   loc de ea vezi o eroare, aceasta iti spune exact ce lipseste.
+3. Goleste cache-ul browserului pentru Home Assistant, nu doar Ctrl+F5 — aplicatia
+   e un PWA cu service worker, care serveste vechea lista de resurse. Cel mai
+   simplu test: deschide Home Assistant intr-o fereastra privata.
+
+Ca solutie de rezerva poti adauga resursa manual: `Settings → Dashboards →
+meniul din dreapta sus → Resources → Add resource`, adresa
+`/opcom_pzu_static/opcom-pzu-card.js`, tipul **JavaScript Module**.
+
+Pagina integrarii are si **Download diagnostics**, unde sectiunea `card` arata
+daca fisierul a fost gasit si daca resursa a fost inregistrata.
 
 **Preturile de maine lipsesc.** Sunt publicate de regula intre 13:00 si 14:00.
 Pana atunci atributul `tomorrow_valid` este `false`.

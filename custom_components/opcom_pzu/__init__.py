@@ -10,7 +10,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_change
 
-from .const import CARD_FILENAME, CARD_URL_BASE, DOMAIN
+from .const import CARD_FILENAME, CARD_REGISTERED, CARD_URL_BASE, DOMAIN
 from .coordinator import OpcomCoordinator, RuntimeData, Settings
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,29 +23,62 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+def _card_dir() -> Path | None:
+    """Directorul care contine cardul.
+
+    In mod normal e `www/` din integrare. Cautam si langa `__init__.py`, in caz
+    ca fisierul a ajuns acolo la o instalare manuala.
+    """
+    here = Path(__file__).parent
+    for candidate in (here / "www", here):
+        if (candidate / CARD_FILENAME).is_file():
+            return candidate
+    return None
+
+
 async def _async_register_card(hass: HomeAssistant) -> None:
     """Serveste cardul propriu si il adauga la resursele de frontend.
 
     Asa nu trebuie sa instalezi separat un card din HACS si nici sa adaugi
     manual resursa in dashboard.
-    """
-    if hass.data.get(f"{DOMAIN}_card_registered"):
-        return
 
-    path = Path(__file__).parent / "www" / CARD_FILENAME
-    if not path.is_file():
-        _LOGGER.warning("Cardul %s nu a fost gasit la %s", CARD_FILENAME, path)
+    Important: Home Assistant construieste o resursa statica doar pentru un
+    DIRECTOR — pentru un fisier individual exista doar o cale secundara, care
+    lipseste din versiunile mai vechi. De aceea inregistram folderul intreg.
+    """
+    if hass.data.get(CARD_REGISTERED):
         return
 
     url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
+    directory = _card_dir()
+    if directory is None:
+        _LOGGER.error(
+            "Nu am gasit %s in %s. Cardul nu va fi disponibil — reinstaleaza "
+            "integrarea din HACS sau copiaza fisierul manual.",
+            CARD_FILENAME,
+            Path(__file__).parent / "www",
+        )
+        return
+
     try:
         from homeassistant.components.http import StaticPathConfig
 
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(url, str(path), cache_headers=False)]
+            [StaticPathConfig(CARD_URL_BASE, str(directory), False)]
         )
     except ImportError:  # Home Assistant mai vechi de 2024.7
-        hass.http.register_static_path(url, str(path), cache_headers=False)
+        hass.http.register_static_path(CARD_URL_BASE, str(directory), False)
+    except RuntimeError as err:
+        # calea era deja inregistrata (reincarcare a intrarii) — nu e o problema
+        _LOGGER.debug("Calea statica %s era deja inregistrata: %s", CARD_URL_BASE, err)
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception(
+            "Nu am putut servi cardul din %s. Adauga manual resursa %s "
+            "(tip: JavaScript Module) din Settings > Dashboards > Resources.",
+            directory,
+            url,
+        )
+        return
 
     version = "0"
     try:
@@ -55,11 +88,20 @@ async def _async_register_card(hass: HomeAssistant) -> None:
     except Exception:  # noqa: BLE001
         pass
 
-    from homeassistant.components.frontend import add_extra_js_url
+    try:
+        from homeassistant.components.frontend import add_extra_js_url
 
-    add_extra_js_url(hass, f"{url}?v={version}")
-    hass.data[f"{DOMAIN}_card_registered"] = True
-    _LOGGER.debug("Card inregistrat la %s", url)
+        add_extra_js_url(hass, f"{url}?v={version}")
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception(
+            "Nu am putut inregistra cardul in frontend. Adauga manual resursa %s "
+            "(tip: JavaScript Module) din Settings > Dashboards > Resources.",
+            url,
+        )
+        return
+
+    hass.data[CARD_REGISTERED] = True
+    _LOGGER.info("Cardul OPCOM PZU este servit la %s (din %s)", url, directory)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

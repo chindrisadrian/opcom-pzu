@@ -16,7 +16,7 @@
  *   height   inaltimea graficului in pixeli (implicit 200)
  */
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 
 // rampa albastra secventiala: pret mic -> pret mare
 const RAMP = [

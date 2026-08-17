@@ -58,3 +58,4 @@ def window_key(hours: float) -> str:
 # --- resursa de frontend ---------------------------------------------------
 CARD_FILENAME: Final = "opcom-pzu-card.js"
 CARD_URL_BASE: Final = f"/{DOMAIN}_static"
+CARD_REGISTERED: Final = f"{DOMAIN}_card_registered"
