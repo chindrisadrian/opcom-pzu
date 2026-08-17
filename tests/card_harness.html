@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ro" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>Verificare opcom-pzu-card</title>
+<style>
+  /* variabilele pe care le expune Home Assistant catre carduri */
+  :root {
+    --card-background-color: #1c1c1c;
+    --primary-text-color: #e1e1e1;
+    --secondary-text-color: #9b9b9b;
+    --divider-color: rgba(225,225,225,.12);
+    --page-bg: #111111;
+  }
+  html[data-theme="light"] {
+    --card-background-color: #ffffff;
+    --primary-text-color: #212121;
+    --secondary-text-color: #727272;
+    --divider-color: rgba(0,0,0,.12);
+    --page-bg: #f2f4f6;
+  }
+  body { margin:0; padding:24px; background:var(--page-bg);
+         font:14px/1.5 Roboto,-apple-system,"Segoe UI",sans-serif;
+         color:var(--primary-text-color); }
+  .wrap { max-width:860px; margin:0 auto; display:grid; gap:20px; }
+  button { background:var(--card-background-color); color:var(--primary-text-color);
+           border:1px solid var(--divider-color); border-radius:8px; padding:6px 12px;
+           cursor:pointer; font:inherit; margin-bottom:16px; }
+  h3 { margin:0 0 6px; font-size:13px; font-weight:500; color:var(--secondary-text-color); }
+</style>
+</head>
+<body>
+<button onclick="tgl()">Comuta tema</button>
+<div class="wrap">
+  <div><h3>48h — azi + maine</h3><div id="slot48"></div></div>
+  <div><h3>doar azi (span: today)</h3><div id="slot24"></div></div>
+  <div><h3>fara date</h3><div id="slotEmpty"></div></div>
+</div>
+
+<script>
+// ha-card, asa cum il vede cardul in Home Assistant
+class HaCard extends HTMLElement {
+  connectedCallback() {
+    this.style.display = 'block';
+    this.style.background = 'var(--card-background-color)';
+    this.style.borderRadius = '12px';
+    this.style.boxShadow = '0 2px 4px rgba(0,0,0,.15)';
+  }
+}
+customElements.define('ha-card', HaCard);
+</script>
+<script src="../custom_components/opcom_pzu/www/opcom-pzu-card.js"></script>
+<script>
+const PRICES = [985.42,943.70,879.91,831.44,876.47,849.12,838.99,786.92,799.91,786.94,
+ 784.77,791.41,777.83,770.72,777.00,786.93,778.15,771.05,782.87,797.73,
+ 771.42,817.95,836.06,910.12,903.94,993.47,1000.09,1019.30,1039.54,1013.72,
+ 990.31,839.77,1055.96,1028.59,943.85,856.49,915.34,880.79,693.38,601.99,
+ 785.73,785.82,715.40,706.70,711.53,706.55,707.22,692.16,670.24,706.67,
+ 715.28,707.81,713.63,709.08,708.04,697.37,698.43,698.85,708.08,708.20,
+ 700.40,688.20,708.02,740.47,700.89,718.98,732.65,782.89,727.19,820.87,
+ 906.84,1036.69,899.22,936.88,1024.65,1103.85,1006.75,1029.16,1089.75,1154.43,
+ 1101.38,1080.34,1086.86,1107.62,1142.50,1111.44,1027.90,980.66,1049.95,1022.50,
+ 987.13,954.67,1004.25,932.81,913.71,864.67];
+
+const D = new Date(); const DAY0 = new Date(D.getFullYear(), D.getMonth(), D.getDate(), 0, 0, 0);
+const iso = (t) => new Date(t).toISOString();
+const hh = (t) => { const d = new Date(t);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+
+function mkDay(offsetDays, mul) {
+  const out = [];
+  for (let i = 0; i < 96; i++) {
+    const t = DAY0.getTime() + (offsetDays*96 + i) * 900000;
+    const f = mul ? 0.88 + 0.22 * Math.sin((i + 11) / 15) : 1;
+    out.push({ interval: i+1, start: iso(t), hour: hh(t),
+               value: Math.round(PRICES[i]*f*100)/100 });
+  }
+  return out;
+}
+
+const today = mkDay(0, false), tomorrow = mkDay(1, true);
+// fereastra optima de 2h, calculata la fel ca in Python
+const all = today.concat(tomorrow);
+const NOW = Date.now();
+const horizon = all.filter(r => new Date(r.start).getTime() + 900000 > NOW);
+let bi = 0, bs = -1e9;
+for (let i = 0; i + 8 <= horizon.length; i++) {
+  let s = 0; for (let k = 0; k < 8; k++) s += horizon[i+k].value;
+  if (s > bs) { bs = s; bi = i; }
+}
+const wStart = horizon[bi].start;
+const wEnd = iso(new Date(horizon[bi+7].start).getTime() + 900000);
+
+const ATTRS = {
+  raw_today: today,
+  raw_tomorrow: tomorrow,
+  today: { max: 1154.43, min: 601.99, mean: 860.83, max_hour: '19:45',
+           min_hour: '09:45', slots: 96 },
+  tomorrow_valid: true,
+  threshold: 1000,
+  percentile: 80,
+  window_hours: 2,
+  window: { start: wStart, end: wEnd, from: horizon[bi].hour,
+            to: hh(new Date(wEnd).getTime()),
+            label: horizon[bi].hour + ' - ' + hh(new Date(wEnd).getTime()) +
+                   (new Date(wStart).getDate() !== D.getDate() ? ' (maine)' : ''),
+            avg: Math.round(bs/8*100)/100, hours: 2 },
+  current_hour: '14:00',
+  current_rank_today: 90,
+  unit_of_measurement: 'Lei/MWh',
+};
+
+const HASS = {
+  states: {
+    'sensor.opcom_pzu_pret_curent': { state: '698.43', attributes: ATTRS },
+  },
+};
+
+function mount(slot, config, hass) {
+  const el = document.createElement('opcom-pzu-card');
+  el.setConfig(config);
+  document.getElementById(slot).appendChild(el);
+  el.hass = hass;
+  return el;
+}
+
+customElements.whenDefined('opcom-pzu-card').then(() => {
+  window.CARDS = [
+    mount('slot48', { type: 'custom:opcom-pzu-card' }, HASS),
+    mount('slot24', { type: 'custom:opcom-pzu-card', span: 'today',
+                      title: 'Doar azi', height: 160 }, HASS),
+    mount('slotEmpty', { type: 'custom:opcom-pzu-card' },
+          { states: { 'sensor.gol': { state: 'unknown', attributes: {} } } }),
+  ];
+  window.READY = true;
+});
+
+function tgl() {
+  const h = document.documentElement;
+  h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark';
+  window.CARDS.forEach(c => { c.hass = c._hass; });
+}
+</script>
+</body>
+</html>

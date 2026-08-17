@@ -1,0 +1,64 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OPCOM PZU",
+        "description": "Romanian day-ahead electricity prices at 15-minute resolution. All settings can be changed later.",
+        "data": {
+          "window_hours": "Export window length",
+          "threshold": "Export price threshold",
+          "percentile": "Export percentile"
+        },
+        "data_description": {
+          "window_hours": "How long it takes to discharge at your target export power.",
+          "threshold": "Above this price the export signal turns on.",
+          "percentile": "Relative alternative: 80 means the most expensive 20% of the day's intervals."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "OPCOM PZU is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "OPCOM PZU settings",
+        "data": {
+          "window_hours": "Export window length",
+          "threshold": "Export price threshold",
+          "percentile": "Export percentile"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "price_now": { "name": "Current price" },
+      "max_today": { "name": "Max today" },
+      "min_today": { "name": "Min today" },
+      "mean_today": { "name": "Average today" },
+      "peak_hour_today": { "name": "Peak hour today" },
+      "max_tomorrow": { "name": "Max tomorrow" },
+      "price_position": { "name": "Price position today" },
+      "best_window": { "name": "Export window" },
+      "best_window_price": { "name": "Export window price" },
+      "next_peak": { "name": "Next peak" },
+      "minutes_to_peak": { "name": "Minutes to peak" },
+      "top_slots": { "name": "Top export slots" }
+    },
+    "binary_sensor": {
+      "good_moment": { "name": "Good moment to export" },
+      "in_window": { "name": "Inside export window" },
+      "above_threshold": { "name": "Price above threshold" },
+      "in_percentile": { "name": "Price in top percentile" }
+    },
+    "number": {
+      "threshold": { "name": "Export threshold" },
+      "percentile": { "name": "Export percentile" }
+    },
+    "select": {
+      "window_duration": { "name": "Export window length" }
+    }
+  }
+}
