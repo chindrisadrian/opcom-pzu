@@ -7,7 +7,9 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from pathlib import Path
+
+from .const import CARD_FILENAME, CARD_REGISTERED, CARD_URL_BASE, DOMAIN
 
 
 async def async_get_config_entry_diagnostics(
@@ -18,6 +20,12 @@ async def async_get_config_entry_diagnostics(
     coordinator = runtime.coordinator
     data = coordinator.data or {}
     return {
+        "card": {
+            "registered": bool(hass.data.get(CARD_REGISTERED)),
+            "url": f"{CARD_URL_BASE}/{CARD_FILENAME}",
+            "file_found": (Path(__file__).parent / "www" / CARD_FILENAME).is_file(),
+            "search_dir": str(Path(__file__).parent / "www"),
+        },
         "options": dict(entry.options),
         "settings": runtime.settings.as_options(),
         "last_update_success": coordinator.last_update_success,
