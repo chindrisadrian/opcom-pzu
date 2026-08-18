@@ -16,7 +16,7 @@
  *   height   graph height in pixels (default 200)
  */
 
-const VERSION = "2.0.5";
+const VERSION = "2.0.6";
 
 // sequential blue ramp: low price -> high price
 const RAMP = [
@@ -376,9 +376,22 @@ class OpcomPzuCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("opcom-pzu-card")) {
-  customElements.define("opcom-pzu-card", OpcomPzuCard);
+const TAG = "opcom-pzu-card";
+let lastRegistry = null;
+
+function registerCard() {
+  const reg = window.customElements;
+  if (reg === lastRegistry) return;
+  lastRegistry = reg;
+  if (!reg.get(TAG)) {
+    try { reg.define(TAG, OpcomPzuCard); } catch (_) {}
+  }
 }
+
+registerCard();
+const _reRegister = setInterval(registerCard, 100);
+setTimeout(() => clearInterval(_reRegister), 20000);
+window.addEventListener("load", registerCard);
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === "opcom-pzu-card")) {
