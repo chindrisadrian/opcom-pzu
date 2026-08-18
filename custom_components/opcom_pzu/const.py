@@ -8,7 +8,7 @@ from typing import Final
 DOMAIN: Final = "opcom_pzu"
 NAME: Final = "OPCOM PZU"
 MANUFACTURER: Final = "Adrian Chindriș (Unofficial)"
-MODEL: Final = "Day-Ahead Market (ROPEX_DAM_15min)"
+MODEL: Final = "OPCOM PZU & Export Optimizer"
 
 UPDATE_INTERVAL: Final = timedelta(minutes=5)
 REQUEST_TIMEOUT: Final = 30
