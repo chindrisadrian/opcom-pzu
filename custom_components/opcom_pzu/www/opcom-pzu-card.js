@@ -16,7 +16,7 @@
  *   height   graph height in pixels (default 200)
  */
 
-const VERSION = "2.0.4";
+const VERSION = "2.0.5";
 
 // sequential blue ramp: low price -> high price
 const RAMP = [
@@ -195,6 +195,17 @@ class OpcomPzuCard extends HTMLElement {
     if (!this._hass) return;
     if (!this._built) this._build();
 
+    try {
+      this._renderSafe();
+    } catch (err) {
+      console.error("OPCOM PZU CARD CRASH:", err);
+      if (this._els && this._els.body) {
+        this._els.body.innerHTML = `<div style="color:red; padding:20px;">Card crashed: ${err.message}</div>`;
+      }
+    }
+  }
+
+  _renderSafe() {
     const d = this._collect();
     const { head, body, legend, tip } = this._els;
 
