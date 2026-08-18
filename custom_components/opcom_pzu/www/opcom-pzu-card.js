@@ -16,7 +16,7 @@
  *   height   graph height in pixels (default 200)
  */
 
-const VERSION = "2.0.3";
+const VERSION = "2.0.4";
 
 // sequential blue ramp: low price -> high price
 const RAMP = [
