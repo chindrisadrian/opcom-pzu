@@ -154,17 +154,21 @@ Heavy attributes (the 192 intervals) are marked as **unrecorded**, so they don't
 
 **The integration doesn't start.** Check the log in `Settings → System → Logs`. On the integration page you also have **Download diagnostics**, which includes the last network error and how many intervals were loaded.
 
+**The card shows "OPCOM data not yet available" or sensors are "Unavailable" right after installation.** This is normal. The integration is either still downloading the initial data from OPCOM, or OPCOM servers are temporarily slow. Data will appear automatically at the next 5-minute refresh once the download succeeds.
+
 **`Custom element doesn't exist: opcom-pzu-card`.** This means the card file didn't reach the browser. Check, in order:
 
 1. Open `http://<your-ha-address>:8123/opcom_pzu_static/opcom-pzu-card.js` in a tab. If you see the JavaScript code, the server is fine and the problem is just caching — skip to step 3. If you get a 404, go to step 2.
 2. In `Settings → System → Logs`, search for `opcom_pzu`. At startup, the integration writes a line like `The OPCOM PZU card is served at /opcom_pzu_static/...`. If you see an error instead, it tells you exactly what's missing.
-3. Clear the browser cache for Home Assistant, not just Ctrl+F5 — the app is a PWA with a service worker, which serves the old list of resources. The simplest test: open Home Assistant in an incognito window.
+3. Clear the frontend cache:
+   - **In a browser:** Clear the cache (not just Ctrl+F5) — the app is a PWA with a service worker, which serves the old list of resources. The simplest test: open Home Assistant in an incognito window.
+   - **In the Companion App:** Force close the app from your phone's memory and reopen it, or go to App Settings and clear the frontend cache.
 
 As a fallback you can add the resource manually: `Settings → Dashboards → top right menu → Resources → Add resource`, url `/opcom_pzu_static/opcom-pzu-card.js`, type **JavaScript Module**.
 
 The integration page also has **Download diagnostics**, where the `card` section shows if the file was found and if the resource was registered.
 
-**Tomorrow's prices are missing.** They are usually published between 13:00 and 14:00. Until then the `tomorrow_valid` attribute is `false`.
+**Tomorrow's prices are missing.** They are usually published between 13:00 and 14:00 (Romania time). Until then the `tomorrow_valid` attribute is `false` and the sensor is `Unavailable`.
 
 **Hours are shifted.** Check the time zone in `Settings → System → General`. The integration uses the timezone configured in Home Assistant.
 
