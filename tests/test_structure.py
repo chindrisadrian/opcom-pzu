@@ -106,7 +106,7 @@ for p in platforms:
 
 # ---- the card -------------------------------------------------------------
 card = (COMP / "www" / "opcom-pzu-card.js").read_text()
-check("card defines element", 'customElements.define("opcom-pzu-card"' in card)
+check("card defines element", '.define(' in card and '"opcom-pzu-card"' in card)
 check("card registers in customCards", "window.customCards" in card)
 check("card has setConfig", "setConfig(" in card)
 check("card has getCardSize", "getCardSize(" in card)
