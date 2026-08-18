@@ -7,7 +7,7 @@ from typing import Final
 
 DOMAIN: Final = "opcom_pzu"
 NAME: Final = "OPCOM PZU"
-MANUFACTURER: Final = "OPCOM"
+MANUFACTURER: Final = "Adrian Chindriș (Unofficial)"
 MODEL: Final = "Day-Ahead Market (ROPEX_DAM_15min)"
 
 UPDATE_INTERVAL: Final = timedelta(minutes=5)
